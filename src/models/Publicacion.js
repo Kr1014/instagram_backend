@@ -2,9 +2,9 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../utils/connection");
 
 const Publicacion = sequelize.define("publicacion", {
-  image: {
+  contentUrl: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: false, // La URL del contenido (imagen o video) es obligatoria
   },
   description: {
     type: DataTypes.STRING,

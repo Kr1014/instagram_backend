@@ -3,6 +3,8 @@ const {
   create,
   remove,
   update,
+  responderComentario,
+  obtenerComentarioConRespuestas,
 } = require("../controllers/comentarioController");
 const express = require("express");
 const { verifyJwt } = require("../utils/verifyJWT");
@@ -18,5 +20,13 @@ routerComentario
   .route("/:publicacionId/:comentarioId")
   .delete(verifyJwt, remove)
   .put(verifyJwt, update);
+
+routerComentario
+  .route("/:comentarioId/responder")
+  .post(verifyJwt, responderComentario);
+
+routerComentario
+  .route("/:comentarioId/respuestas")
+  .get(verifyJwt, obtenerComentarioConRespuestas);
 
 module.exports = routerComentario;

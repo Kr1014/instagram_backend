@@ -2,16 +2,24 @@ const {
   seguir,
   eliminarMisSeguidores,
   verificarSeguimiento,
+  obtenerLosUsuariosSeguidos,
 } = require("../controllers/seguidorController");
 const express = require("express");
 const { verifyJwt } = require("../utils/verifyJWT");
 
 const routerSeguidor = express.Router();
 
-routerSeguidor.route("/:usuarioASeguir").post(verifyJwt, seguir);
+routerSeguidor
+  .route("/:usuarioASeguir")
+  .post(verifyJwt, seguir)
+  .get(verifyJwt, obtenerLosUsuariosSeguidos);
 
 routerSeguidor
-  .route("/:elimnarMiSeguidor")
+  .route("/:userId/obtenerSeguidos")
+  .get(verifyJwt, obtenerLosUsuariosSeguidos);
+
+routerSeguidor
+  .route("/:eliminarMiSeguidor")
   .delete(verifyJwt, eliminarMisSeguidores);
 
 routerSeguidor

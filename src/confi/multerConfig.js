@@ -9,25 +9,33 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configuración de Multer con Cloudinary
+// Configuración de Multer
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "reels_videos", // Carpeta en Cloudinary
-    resource_type: "video", // Especifica que es un recurso de video
-    format: async (req, file) => "mp4", // Formato de video opcional
+    folder: "publicaciones",
+    resource_type: "auto",
   },
 });
 
-// Middleware de Multer
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = ["video/mp4", "video/webm", "video/ogg"];
+    const allowedMimeTypes = [
+      "image/jpeg",
+      "image/png",
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+    ];
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Tipo de archivo no permitido. Solo se permiten videos."));
+      cb(
+        new Error(
+          "Tipo de archivo no permitido. Solo se permiten imágenes o videos."
+        )
+      );
     }
   },
   limits: { fileSize: 50 * 1024 * 1024 }, // Límite de 50 MB

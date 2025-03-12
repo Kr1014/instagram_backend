@@ -6,13 +6,19 @@ const {
   update,
   login,
   obtenerUsuario,
+  obtenerLosUsuariosSeguidos,
 } = require("../controllers/usuarioController");
 const express = require("express");
 const { verifyJwt } = require("../utils/verifyJWT");
+// const multer = require("multer");
+const { uploadImage } = require("../confi/cloudinaryConfig");
 
 const routerUser = express.Router();
 
-routerUser.route("/").get(verifyJwt, getAll).post(create);
+routerUser
+  .route("/")
+  .get(verifyJwt, getAll)
+  .post(uploadImage.single("photoProfile"), create);
 
 routerUser.route("/login").post(login);
 

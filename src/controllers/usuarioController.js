@@ -3,24 +3,25 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Publicacion = require("../models/Publicacion");
+const Seguidor = require("../models/Seguidor");
 
 const getAll = catchError(async (req, res) => {
   const results = await User.findAll({
     include: [
       {
         model: Publicacion,
-        attributes: ["id", "image", "description"],
+        attributes: ["id", "contentUrl", "description"],
       },
       {
         model: User,
         as: "seguidores",
-        attributes: ["id", "userName"],
+        attributes: ["id", "userName", "photoProfile"],
         through: { attributes: [] },
       },
       {
         model: User,
         as: "seguidos",
-        attributes: ["id", "userName"],
+        attributes: ["id", "userName", "photoProfile"],
         through: { attributes: [] },
       },
     ],
@@ -29,8 +30,20 @@ const getAll = catchError(async (req, res) => {
 });
 
 const create = catchError(async (req, res) => {
-  const result = await User.create(req.body);
-  return res.status(201).json(result);
+  const { firstName, lastName, userName, email, password } = req.body;
+
+  const photoProfileUrl = req.file ? req.file.path : null;
+
+  const newUser = await User.create({
+    firstName,
+    lastName,
+    userName,
+    email,
+    password,
+    photoProfile: photoProfileUrl,
+  });
+
+  return res.status(201).json(newUser);
 });
 
 const getOne = catchError(async (req, res) => {
@@ -39,7 +52,7 @@ const getOne = catchError(async (req, res) => {
     include: [
       {
         model: Publicacion,
-        attributes: ["id", "image", "description"],
+        attributes: ["id", "contentUrl", "description"],
       },
       {
         model: User,
@@ -114,7 +127,7 @@ const obtenerUsuario = catchError(async (req, res) => {
       {
         model: User,
         as: "seguidos",
-        attributes: ["id", "userName"],
+        attributes: ["id", "userName", "photoProfile", "firstName", "lastName"],
         through: { attributes: [] },
       },
     ],

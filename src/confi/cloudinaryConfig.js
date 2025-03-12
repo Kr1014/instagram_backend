@@ -2,24 +2,31 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 
-// Configuración de Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configuración del almacenamiento en Cloudinary
-const storage = new CloudinaryStorage({
+const videoStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "reels_videos", // Carpeta donde se guardarán los videos
-    resource_type: "video", // Especificamos que es un recurso de tipo video
-    format: async (req, file) => "mp4", // Formato de video (opcional)
+    folder: "reels_videos",
+    resource_type: "video",
+    format: async (req, file) => "mp4",
   },
 });
 
-// Middleware de Multer para la subida
-const upload = multer({ storage });
+const imageStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "profile_pictures",
+    resource_type: "image",
+    format: async (req, file) => "jpg",
+  },
+});
 
-module.exports = { upload, cloudinary };
+const uploadVideo = multer({ storage: videoStorage });
+const uploadImage = multer({ storage: imageStorage });
+
+module.exports = { uploadVideo, uploadImage, cloudinary };

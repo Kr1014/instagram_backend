@@ -1,6 +1,7 @@
 const catchError = require("../utils/catchError");
 const MeGusta = require("../models/MeGusta");
 const Publicacion = require("../models/Publicacion");
+const Notificacion = require("../models/Notificacion");
 
 const darMegusta = catchError(async (req, res) => {
   const userId = req.user.id;
@@ -11,16 +12,10 @@ const darMegusta = catchError(async (req, res) => {
   });
 
   try {
-    // Agregar un try...catch para manejar errores
     if (meGustaExistente) {
       await MeGusta.destroy({
         where: { userId, publicacionId },
       });
-
-      // --- (Opcional) Actualizar el contador de "me gusta" ---
-      const publicacion = await Publicacion.findByPk(publicacionId);
-      publicacion.meGustaCount = (publicacion.meGustaCount || 1) - 1;
-      await publicacion.save();
 
       res.status(204).json("Me gusta eliminado");
     } else {
@@ -29,25 +24,20 @@ const darMegusta = catchError(async (req, res) => {
         publicacionId,
       });
 
-      // --- (Opcional) Actualizar el contador de "me gusta" ---
       const publicacion = await Publicacion.findByPk(publicacionId);
-      publicacion.meGustaCount = (publicacion.meGustaCount || 0) + 1;
-      await publicacion.save();
 
-      // --- Crear la notificación ---
-      // await Notificacion.create({
-      //   tipo: 'me_gusta',
-      //   usuarioId: publicacion.userId, // ID del usuario que recibe la notificación
-      //   emisorId: req.user.id, // ID del usuario que da "me gusta"
-      //   publicacionId: publicacionId,
-      //   leida: false,
-      // });
+      await Notificacion.create({
+        tipo: "me_gusta",
+        usuarioId: publicacion.userId,
+        emisorId: req.user.id,
+        publicacionId: publicacionId,
+        leida: false,
+      });
 
-      // --- Emitir la notificación ---
-      // req.io.to(publicacion.userId).emit('meGusta', {
-      //   emisorId: req.user.id,
-      //   publicacionId: publicacionId,
-      // });
+      req.io.to(publicacion.userId).emit("meGusta", {
+        emisorId: req.user.id,
+        publicacionId: publicacionId,
+      });
 
       res.status(201).json("Me gusta creado");
     }

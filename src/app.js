@@ -5,10 +5,16 @@ const router = require("./routes");
 const errorHandler = require("./utils/errorHandler");
 require("dotenv").config();
 
-// Esta es nuestra aplicación
 const app = express();
 
-// Middlewares
+const corsOptions = {
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(
   helmet({
@@ -23,7 +29,6 @@ app.get("/", (req, res) => {
   return res.send("¡Hola desde mi clon de Instagram!");
 });
 
-// middlewares después de las rutas
 app.use(errorHandler);
 
 module.exports = app;
