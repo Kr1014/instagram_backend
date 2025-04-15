@@ -8,9 +8,9 @@ const routerMensajes = require("./mensajesRoute");
 const routerGuardarPublicacion = require("./publicacionGuardada.route");
 
 const routerMeGustaComentario = require("./meGustaComentarioRoute");
+const routerNotificacion = require("./notificationRoute");
+const routerHistoria = require("./historiaRoute");
 const router = express.Router();
-
-// colocar las rutas aquí
 
 router.use("/users", routerUser);
 router.use("/comentarios", routerComentario);
@@ -20,5 +20,7 @@ router.use("/seguidores", routerSeguidor);
 router.use("/mensajes", routerMensajes);
 router.use("/publicacionesGuardadas", routerGuardarPublicacion);
 router.use("/meGustaComentarios", routerMeGustaComentario);
+router.use("/notificaciones", routerNotificacion);
+router.use("/historias", routerHistoria);
 
 module.exports = router;

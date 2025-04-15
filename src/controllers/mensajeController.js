@@ -2,6 +2,7 @@ const catchError = require("../utils/catchError");
 const Mensaje = require("../models/Mensaje");
 const User = require("../models/User");
 const { Op } = require("sequelize");
+const sequelize = require("../utils/connection");
 
 const enviarMensaje = catchError(async (req, res) => {
   const { texto, contentMultimedia, destinatarioId } = req.body;
@@ -47,6 +48,14 @@ const obtenerConversacion = catchError(async (req, res) => {
         { remitenteId: usuarioId, destinatarioId: otroUsuarioId },
         { remitenteId: otroUsuarioId, destinatarioId: usuarioId },
       ],
+      [Op.and]: [
+        {
+          [Op.or]: [
+            { borradopor: { [Op.is]: null } },
+            sequelize.literal(`NOT (${usuarioId} = ANY (borradopor))`),
+          ],
+        },
+      ],
     },
     include: [
       {
@@ -71,18 +80,26 @@ const todasLasConversaciones = catchError(async (req, res) => {
 
   const allMensajes = await Mensaje.findAll({
     where: {
-      [Op.or]: [{ destinatarioId: userId }, { remitenteId: userId }],
+      [Op.and]: [
+        { [Op.or]: [{ destinatarioId: userId }, { remitenteId: userId }] },
+        {
+          [Op.or]: [
+            { borradopor: { [Op.is]: null } },
+            sequelize.literal(`NOT (${userId} = ANY (borradopor))`),
+          ],
+        },
+      ],
     },
     include: [
       {
         model: User,
         as: "remitente",
-        attributes: ["id", "userName", "photoProfile", "firstName", "lastName"],
+        attributes: { exclude: [""] },
       },
       {
         model: User,
         as: "destinatario",
-        attributes: ["id", "userName", "photoProfile", "firstName", "lastName"],
+        attributes: { exclude: [""] },
       },
     ],
     order: [["createdAt", "DESC"]],
@@ -90,18 +107,38 @@ const todasLasConversaciones = catchError(async (req, res) => {
 
   const conversacionesMap = new Map();
 
+  // allMensajes.forEach((mensaje) => {
+  //   const otroUsuario =
+  //     mensaje.remitenteId === userId ? mensaje.destinatario : mensaje.remitente;
+
+  //   if (!conversacionesMap.has(otroUsuario.id)) {
+  //     conversacionesMap.set(otroUsuario.id, {
+  //       id: mensaje.id,
+  //       usuario: otroUsuario,
+  //       ultimoMensaje: mensaje.texto,
+  //       createdAt: mensaje.createdAt,
+  //       updatedAt: mensaje.updatedAt,
+  //       remitente: mensaje.remitenteId === userId ? userId : otroUsuario.id,
+  //       destinatario: mensaje.destinatario,
+  //       leida: mensaje.remitenteId !== userId ? mensaje.leido : true,
+  //     });
+  //   }
+  // });
+
   allMensajes.forEach((mensaje) => {
     const otroUsuario =
       mensaje.remitenteId === userId ? mensaje.destinatario : mensaje.remitente;
 
-    if (!conversacionesMap.has(otroUsuario.id)) {
+    if (otroUsuario && !conversacionesMap.has(otroUsuario.id)) {
       conversacionesMap.set(otroUsuario.id, {
         id: mensaje.id,
         usuario: otroUsuario,
         ultimoMensaje: mensaje.texto,
         createdAt: mensaje.createdAt,
+        updatedAt: mensaje.updatedAt,
         remitente: mensaje.remitenteId === userId ? userId : otroUsuario.id,
         destinatario: mensaje.destinatario,
+        leida: mensaje.remitenteId !== userId ? mensaje.leido : true,
       });
     }
   });
@@ -134,7 +171,7 @@ const marcarMensajesComoLeidos = catchError(async (req, res) => {
   res.json({ mensaje: "Mensajes marcados como leídos" });
 });
 
-const borrarMensaje = catchError(async (req, res) => {
+const borrarMensajeParaUsuario = catchError(async (req, res) => {
   const { id } = req.params;
   const usuarioId = req.user.id;
 
@@ -144,23 +181,63 @@ const borrarMensaje = catchError(async (req, res) => {
     return res.status(404).json({ mensaje: "Mensaje no encontrado" });
   }
 
-  if (
-    mensaje.remitenteId !== usuarioId &&
-    mensaje.destinatarioId !== usuarioId
-  ) {
-    return res
-      .status(403)
-      .json({ mensaje: "No tienes permiso para eliminar este mensaje" });
+  let borradoPorArray = mensaje.borradopor || [];
+
+  if (!borradoPorArray.includes(usuarioId)) {
+    borradoPorArray.push(usuarioId);
   }
 
-  await Mensaje.destroy({ where: { id } });
-  res.json({ mensaje: "Mensaje eliminado" });
+  const resultado = await Mensaje.update(
+    { borradopor: borradoPorArray },
+    { where: { id } }
+  );
+
+  console.log("Resultado de la actualización:", resultado);
+
+  res.json({ mensaje: "Mensaje eliminado para ti" });
+});
+
+const borrarConversacionCompleta = catchError(async (req, res) => {
+  const usuarioId = req.user.id;
+  const otroUsuarioId = req.params.usuarioId;
+
+  const mensajes = await Mensaje.findAll({
+    where: {
+      [Op.or]: [
+        { remitenteId: usuarioId, destinatarioId: otroUsuarioId },
+        { remitenteId: otroUsuarioId, destinatarioId: usuarioId },
+      ],
+    },
+  });
+
+  if (!mensajes.length) {
+    return res
+      .status(404)
+      .json({ mensaje: "No hay mensajes en esta conversación" });
+  }
+
+  for (const mensaje of mensajes) {
+    let borradoPor = mensaje.borradopor || [];
+    if (!borradoPor.includes(usuarioId)) {
+      borradoPor.push(usuarioId);
+      await mensaje.update({ borradopor: borradoPor });
+    }
+
+    if (borradoPor.includes(usuarioId)) {
+      await mensaje.destroy();
+    }
+  }
+
+  res.json({
+    mensaje: "Conversación eliminada para ti, pero el otro usuario la mantiene",
+  });
 });
 
 module.exports = {
   obtenerConversacion,
   todasLasConversaciones,
   marcarMensajesComoLeidos,
-  borrarMensaje,
+  borrarMensajeParaUsuario,
+  borrarConversacionCompleta,
   enviarMensaje,
 };

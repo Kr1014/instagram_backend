@@ -2,7 +2,7 @@ const catchError = require("../utils/catchError");
 const Publicacion = require("../models/Publicacion");
 const User = require("../models/User");
 const Comentarios = require("../models/Comentarios");
-const MeGusta = require("../models/MeGusta");
+
 const { Sequelize, Op } = require("sequelize");
 
 const getAll = catchError(async (req, res) => {
@@ -64,7 +64,13 @@ const getAll = catchError(async (req, res) => {
         include: [
           {
             model: User,
-            attributes: ["id", "userName", "photoProfile"],
+            attributes: [
+              "id",
+              "userName",
+              "photoProfile",
+              "firstName",
+              "lastName",
+            ],
           },
           {
             model: User,
@@ -115,11 +121,54 @@ const getVideos = catchError(async (req, res) => {
         },
         {
           model: Comentarios,
-          attributes: { exclude: ["createdAt", "updatedAt"] },
+          attributes: { exclude: [""] },
           include: [
             {
               model: User,
-              attributes: ["id", "userName", "photoProfile"],
+              attributes: [
+                "id",
+                "userName",
+                "photoProfile",
+                "firstName",
+                "lastName",
+              ],
+              include: [
+                {
+                  model: Publicacion,
+                  attributes: { exclude: [""] },
+                },
+                {
+                  model: User,
+                  as: "seguidos",
+                  attributes: { exclude: [""] },
+                },
+                {
+                  model: User,
+                  as: "seguidores",
+                  attributes: { exclude: [""] },
+                },
+              ],
+            },
+
+            {
+              model: User,
+              as: "likers",
+              attributes: { exclude: [""] },
+            },
+            {
+              model: Comentarios,
+              as: "respuestas",
+              include: [
+                {
+                  model: User,
+                  attributes: ["id", "userName", "photoProfile"],
+                },
+                {
+                  model: User,
+                  as: "likers",
+                  through: { attributes: [] },
+                },
+              ],
             },
           ],
         },

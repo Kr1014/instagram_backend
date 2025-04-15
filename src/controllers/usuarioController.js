@@ -3,7 +3,6 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Publicacion = require("../models/Publicacion");
-const Seguidor = require("../models/Seguidor");
 
 const getAll = catchError(async (req, res) => {
   const results = await User.findAll({
@@ -91,7 +90,17 @@ const update = catchError(async (req, res) => {
 const login = catchError(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({
+    where: { email },
+    include: [
+      {
+        model: User,
+        as: "seguidos",
+        attributes: ["id", "firstName", "lastName", "userName", "photoProfile"],
+        through: { attributes: [] },
+      },
+    ],
+  });
   if (!user) {
     return res.status(401).json("Este correo no existe");
   }

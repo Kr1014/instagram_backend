@@ -11,8 +11,8 @@ const routerSeguidor = express.Router();
 
 routerSeguidor
   .route("/:usuarioASeguir")
-  .post(verifyJwt, seguir)
-  .get(verifyJwt, obtenerLosUsuariosSeguidos);
+  .post(verifyJwt, (req, res) => seguir(req, res, req.io))
+  .get(verifyJwt, (req, res) => obtenerLosUsuariosSeguidos(req, res, req.io));
 
 routerSeguidor
   .route("/:userId/obtenerSeguidos")

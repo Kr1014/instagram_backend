@@ -36,4 +36,10 @@ const Notificacion = sequelize.define("notificacion", {
   },
 });
 
+Notificacion.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  delete values.password;
+  return values;
+};
+
 module.exports = Notificacion;

@@ -12,12 +12,12 @@ const getAll = catchError(async (req, res) => {
     include: [
       {
         model: User,
-        attributes: { exclude: ["createdAt", "updatedAt"] },
+        attributes: { exclude: [" "] },
       },
       {
         model: User,
         as: "likers",
-        attributes: ["id", "userName", "photoProfile", "firstName", "lastName"],
+        attributes: { exclude: [" "] },
         through: { attributes: [] },
       },
       {
@@ -65,7 +65,6 @@ const create = catchError(async (req, res) => {
       texto,
       publicacionId,
       comentarioPadreId: comentarioPadreId || null,
-      l,
     });
 
     const publicacion = await Publicacion.findByPk(publicacionId);
@@ -227,7 +226,6 @@ const obtenerComentarioConRespuestas = catchError(async (req, res) => {
   }
 });
 
-// Exportar todas las funciones
 module.exports = {
   getAll,
   create,

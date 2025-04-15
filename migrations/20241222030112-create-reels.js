@@ -2,7 +2,6 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    console.log("Ejecutando migración create-reels");
     await queryInterface.createTable("Reels", {
       id: {
         type: Sequelize.INTEGER,

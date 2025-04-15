@@ -1,9 +1,11 @@
 const app = require("./app");
+require("./utils/cronJobs");
 const Mensaje = require("./models/Mensaje");
 const User = require("./models/User");
 const Publicacion = require("./models/Publicacion");
 const Notificacion = require("./models/Notificacion");
 const sequelize = require("./utils/connection");
+const { setSocketInstance } = require("./socket/socket");
 require("./models");
 require("dotenv").config();
 
@@ -15,32 +17,34 @@ const io = require("socket.io")(server, {
   },
 });
 
+setSocketInstance(io);
+
+const routerComentario = require("./routes/comentarioRoute");
+const routerNotificaciones = require("./routes/notificationRoute");
+const routerSeguidor = require("./routes/seguidoresRouter");
+
+app.use("/comentarios", routerComentario);
+app.use("/notificaciones", routerNotificaciones);
+app.use("/seguidores", routerSeguidor);
+
 const userSockets = {};
 
 io.on("connection", (socket) => {
-  console.log("Usuario conectado:", socket.id);
-
   socket.on("joinRoom", (userId) => {
-    console.log(`Usuario ${socket.id} unido a la sala ${userId}`);
     userSockets[userId] = socket.id;
     socket.join(userId);
-    console.log("Conexiones activas:", userSockets);
   });
 
   socket.on("enviar-mensaje", async (data, callback) => {
-    console.log(`Mensaje recibido en backend desde ${data.remitenteId}:`, data);
-
     try {
       const mensajeExistente = await Mensaje.findOne({
         where: { uuid: data.uuid },
       });
 
       if (mensajeExistente) {
-        console.log("Mensaje duplicado ignorado:", data.uuid);
         return callback({ status: "error", message: "Mensaje duplicado" });
       }
 
-      // Crear el nuevo mensaje
       const nuevoMensaje = await Mensaje.create({
         texto: data.texto,
         leido: false,
@@ -48,8 +52,6 @@ io.on("connection", (socket) => {
         remitenteId: data.remitenteId,
         destinatarioId: data.destinatarioId,
       });
-
-      console.log("Nuevo mensaje guardado en la base de datos:", nuevoMensaje);
 
       const mensajeCompleto = await Mensaje.findByPk(nuevoMensaje.id, {
         include: [
@@ -78,16 +80,8 @@ io.on("connection", (socket) => {
         ],
       });
 
-      console.log("✅ Mensaje completo con destinatario:", mensajeCompleto);
-
       const remitenteSocketId = userSockets[data.remitenteId];
       const destinatarioSocketId = userSockets[data.destinatarioId];
-
-      console.log("🎯 Intentando enviar mensaje a:");
-      console.log(`   - Remitente (${data.remitenteId}): ${remitenteSocketId}`);
-      console.log(
-        `   - Destinatario (${data.destinatarioId}): ${destinatarioSocketId}`
-      );
 
       if (remitenteSocketId) {
         io.to(remitenteSocketId).emit("nuevo-mensaje", mensajeCompleto);
@@ -108,7 +102,7 @@ io.on("connection", (socket) => {
       const { userId, publicacionId } = data;
       const publicacion = await Publicacion.findByPk(publicacionId);
 
-      const notificacion = await Notificacion.create({
+      await Notificacion.create({
         tipo: "me_gusta",
         usuarioId: publicacion.userId,
         emisorId: userId,
@@ -121,10 +115,6 @@ io.on("connection", (socket) => {
         emisorId: userId,
         publicacionId: publicacionId,
       });
-
-      console.log(
-        `Notificación de "me gusta" emitida para el usuario ${publicacion.userId}`
-      );
     } catch (error) {
       console.error("Error al procesar la notificación de me gusta:", error);
     }
@@ -133,9 +123,7 @@ io.on("connection", (socket) => {
   socket.on("nuevo-seguidor", async (data) => {
     try {
       const { userId, seguidorId } = data;
-      const seguidor = await User.findByPk(seguidorId);
-
-      const notificacion = await Notificacion.create({
+      await Notificacion.create({
         tipo: "nuevo_seguidor",
         usuarioId: userId,
         emisorId: seguidorId,
@@ -146,10 +134,6 @@ io.on("connection", (socket) => {
         tipo: "nuevo_seguidor",
         emisorId: seguidorId,
       });
-
-      console.log(
-        `Notificación de nuevo seguidor emitida para el usuario ${userId}`
-      );
     } catch (error) {
       console.error(
         "Error al procesar la notificación de nuevo seguidor:",
@@ -163,10 +147,10 @@ io.on("connection", (socket) => {
       const { comentarioId, publicacionId, usuarioId } = data;
       const publicacion = await Publicacion.findByPk(publicacionId);
 
-      const notificacion = await Notificacion.create({
+      await Notificacion.create({
         tipo: "comentario",
-        usuarioId: publicacion.userId, // ID del usuario que recibe la notificación
-        emisorId: usuarioId, // ID del usuario que hizo el comentario
+        usuarioId: publicacion.userId,
+        emisorId: usuarioId,
         publicacionId: publicacionId,
         leida: false,
       });
@@ -177,10 +161,6 @@ io.on("connection", (socket) => {
         publicacionId: publicacionId,
         comentarioId: comentarioId,
       });
-
-      console.log(
-        `Notificación de nuevo comentario emitida para el usuario ${publicacion.userId}`
-      );
     } catch (error) {
       console.error(
         "Error al procesar la notificación de nuevo comentario:",
@@ -190,8 +170,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Usuario desconectado:", socket.id);
-
     for (const userId in userSockets) {
       if (userSockets[userId] === socket.id) {
         delete userSockets[userId];
@@ -201,6 +179,8 @@ io.on("connection", (socket) => {
   });
 });
 
+module.exports = io;
+
 const PORT = process.env.PORT || 8080;
 
 const main = async () => {
@@ -208,7 +188,6 @@ const main = async () => {
     await sequelize.sync();
     console.log("DB connected");
 
-    // Cambiar a `server.listen`
     server.listen(PORT, () => {
       console.log(`👉 Server running on port ${PORT}`);
       console.log(`👉 Link http://localhost:${PORT}`);

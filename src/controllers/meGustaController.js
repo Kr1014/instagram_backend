@@ -34,11 +34,6 @@ const darMegusta = catchError(async (req, res) => {
         leida: false,
       });
 
-      req.io.to(publicacion.userId).emit("meGusta", {
-        emisorId: req.user.id,
-        publicacionId: publicacionId,
-      });
-
       res.status(201).json("Me gusta creado");
     }
   } catch (error) {

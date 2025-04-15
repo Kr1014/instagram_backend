@@ -1,5 +1,6 @@
 // Relaciones en el archivo principal de asociaciones
 const Comentarios = require("./Comentarios");
+const Historia = require("./Historia");
 const MeGusta = require("./MeGusta");
 const MeGustaComentarios = require("./MeGustasComentarios");
 const Mensaje = require("./Mensaje");
@@ -9,21 +10,17 @@ const PublicacionesGuardada = require("./PublicacionesGuardada");
 const Seguidor = require("./Seguidor");
 const User = require("./User");
 
-// Relación entre Publicacion y User
 Publicacion.belongsTo(User);
 User.hasMany(Publicacion);
 
-// Relación entre MeGusta y User-Publicacion
 User.belongsToMany(Publicacion, { through: MeGusta, as: "likedPosts" });
 Publicacion.belongsToMany(User, { through: MeGusta, as: "likers" });
 
-// Relación entre Comentarios y Publicacion-User
 Comentarios.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Comentarios, { foreignKey: "userId" });
 Comentarios.belongsTo(Publicacion, { foreignKey: "publicacionId" });
 Publicacion.hasMany(Comentarios, { foreignKey: "publicacionId" });
 
-// Relación entre User-User
 User.belongsToMany(User, {
   through: Seguidor,
   as: "seguidos",
@@ -35,21 +32,26 @@ User.belongsToMany(User, {
   foreignKey: "usuarioId",
 });
 
-// Relación entre Mensajes y Usuarios
 Mensaje.belongsTo(User, { foreignKey: "remitenteId", as: "remitente" });
 Mensaje.belongsTo(User, { foreignKey: "destinatarioId", as: "destinatario" });
 
-// Relación entre Notificaciones y Usuarios
-Notificacion.belongsTo(User, { foreignKey: "usuarioId", as: "usuario" });
-Notificacion.belongsTo(User, { foreignKey: "emisorId", as: "emisor" });
+Notificacion.belongsTo(User, {
+  foreignKey: "usuarioId",
+  as: "usuario",
+  onDelete: "CASCADE",
+});
+Notificacion.belongsTo(User, {
+  foreignKey: "emisorId",
+  as: "emisor",
+  onDelete: "CASCADE",
+});
 
-// Relación entre Notificaciones y Publicaciones (para "me gusta" y comentarios)
 Notificacion.belongsTo(Publicacion, {
   foreignKey: "publicacionId",
   as: "publicacion",
+  onDelete: "CASCADE",
 });
 
-// Relación entre PublicacionesGuardadas y Publicacion-User
 User.belongsToMany(Publicacion, {
   through: PublicacionesGuardada,
   as: "publicacionesGuardadas",
@@ -59,11 +61,9 @@ Publicacion.belongsToMany(User, {
   as: "usuariosQueGuardaron",
 });
 
-// Relación directa en PublicacionesGuardadas
 PublicacionesGuardada.belongsTo(User, { foreignKey: "userId" });
 PublicacionesGuardada.belongsTo(Publicacion, { foreignKey: "publicacionId" });
 
-// Relación entre MeGustaComentarios y User-Comentarios
 User.belongsToMany(Comentarios, {
   through: MeGustaComentarios,
   as: "commentsLiked",
@@ -75,7 +75,6 @@ Comentarios.belongsToMany(User, {
   foreignKey: "comentarioId",
 });
 
-// Relación entre Comentarios y sus respuestas
 Comentarios.hasMany(Comentarios, {
   as: "respuestas",
   foreignKey: "comentarioPadreId",
@@ -84,3 +83,7 @@ Comentarios.belongsTo(Comentarios, {
   as: "comentarioPadre",
   foreignKey: "comentarioPadreId",
 });
+
+Notificacion.belongsTo(Publicacion, { foreignKey: "publicacionId" });
+Historia.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Historia, { foreignKey: "userId" });

@@ -1,8 +1,13 @@
 const catchError = require("../utils/catchError");
 const Seguidor = require("../models/Seguidor");
 const Notificacion = require("../models/Notificacion");
+const User = require("../models/User");
+const { getSocketInstance } = require("../socket/socket");
 
 const seguir = catchError(async (req, res) => {
+  const io = getSocketInstance();
+  console.log("🔎 req.io en controlador:", io);
+  console.log("📩 Body recibido:", req.body);
   const usuarioId = req.user.id;
   const usuarioASeguirId = req.params.usuarioASeguir;
 
@@ -30,7 +35,9 @@ const seguir = catchError(async (req, res) => {
       leida: false,
     });
 
-    req.io.to(usuarioASeguirId).emit("nuevoSeguidor", {
+    console.log("Estado de req.io:", req.io);
+
+    io.to(usuarioASeguirId).emit("nuevoSeguidor", {
       emisorId: usuarioId,
     });
 

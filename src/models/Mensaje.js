@@ -18,8 +18,13 @@ const Mensaje = sequelize.define("mensaje", {
   },
   uuid: {
     type: DataTypes.STRING,
-    unique: true, // Asegura que no se repita
-    defaultValue: () => uuidv4(), // Genera un UUID único por defecto
+    unique: true,
+    defaultValue: () => uuidv4(),
+  },
+  borradopor: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    allowNull: false,
+    defaultValue: [],
   },
 
   //remitenteId

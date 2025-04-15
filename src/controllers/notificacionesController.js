@@ -1,26 +1,31 @@
 const catchError = require("../utils/catchError");
 const Notificacion = require("../models/Notificacion");
 const { Op } = require("sequelize");
+const User = require("../models/User");
+const Publicacion = require("../models/Publicacion");
 
 const getNotificaciones = catchError(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
   const usuarioId = req.user.id;
 
-  const offset = (page - 1) * limit;
-
-  const { count, rows } = await Notificacion.findAndCountAll({
+  const notificaciones = await Notificacion.findAll({
     where: { usuarioId },
-    include: ["emisor"],
+    include: [
+      {
+        model: User,
+        as: "emisor",
+        attributes: ["id", "firstName", "lastName", "userName", "photoProfile"],
+      },
+      {
+        model: Publicacion,
+        attributes: ["id", "contentUrl", "description"],
+      },
+    ],
     order: [["createdAt", "DESC"]],
-    limit: parseInt(limit),
-    offset: parseInt(offset),
   });
 
   return res.json({
-    total: count,
-    page: parseInt(page),
-    limit: parseInt(limit),
-    data: rows,
+    total: notificaciones.length,
+    data: notificaciones,
   });
 });
 

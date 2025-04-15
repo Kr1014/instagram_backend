@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../utils/connection");
 
-const Publicacion = sequelize.define("publicacion", {
+const Historia = sequelize.define("historia", {
   contentUrl: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -10,13 +10,16 @@ const Publicacion = sequelize.define("publicacion", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  // userId
+  expiresAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
 });
 
-Publicacion.prototype.toJSON = function () {
+Historia.prototype.toJSON = function () {
   const values = { ...this.get() };
   delete values.password;
   return values;
 };
 
-module.exports = Publicacion;
+module.exports = Historia;
