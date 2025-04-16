@@ -9,7 +9,7 @@ require("dotenv").config();
 const app = express();
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "https://vocal-peony-61df86.netlify.app/",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 };
