@@ -12,7 +12,7 @@ require("dotenv").config();
 const server = require("http").createServer(app);
 const io = require("socket.io")(server, {
   cors: {
-    origin: "https://vocal-peony-61df86.netlify.app/",
+    origin: "https://vocal-peony-61df86.netlify.app",
     methods: ["GET", "POST", "DELETE", "UPDATE"],
   },
 });
